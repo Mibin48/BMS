@@ -1,0 +1,14 @@
+{
+  "name": "HEM∆",
+  "short_name": "HEMA",
+  "icons": [
+    {
+      "src": "/logo/hema_icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#07070B",
+  "background_color": "#07070B",
+  "display": "standalone"
+}

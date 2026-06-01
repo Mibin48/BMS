@@ -54,6 +54,9 @@ DECLARE v_units INT;
          updated_at         = CURRENT_TIMESTAMP
    WHERE donor_id = NEW.donor_id;
 
+  INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id, created_at)
+  VALUES (NEW.bank_id, NEW.donor_id, CURRENT_TIMESTAMP);
+
 END$$
 
 DELIMITER ;

@@ -22,6 +22,8 @@ router.put('/inventory/:stock_id', validateUpdateStock, validate, bc.updateStock
 
 // Donors
 router.post('/donors/recall', bc.recallDonors);
+router.get('/donors/search-global', bc.searchGlobalDonors);
+router.post('/donors/register-existing', bc.registerExistingDonor);
 router.get('/donors', bc.getDonors);
 router.get('/donors/:donor_id', bc.getDonorById);
 router.post('/donors', bc.createDonor);

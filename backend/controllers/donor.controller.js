@@ -613,6 +613,11 @@ async function createAppointment(req, res, next) {
             [appt_id, donor_id, bank_id, date, time, notes || null]
         );
 
+        await pool.execute(
+            'INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id) VALUES (?, ?)',
+            [bank_id, donor_id]
+        );
+
         // Notify Blood Bank
         const [u] = await pool.execute("SELECT user_id FROM Users WHERE entity_id=? AND role='bloodbank'", [bank_id]);
         if (u.length) {
@@ -719,6 +724,12 @@ async function rsvpToCamp(req, res, next) {
              VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE status = ?, updated_at = NOW()`,
             [rsvp_id, camp_id, donor_id, status, status]);
+
+        // Link donor to blood bank hosting this camp
+        await pool.execute(
+            'INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id) VALUES (?, ?)',
+            [camp[0].bank_id, donor_id]
+        );
 
         if (status === 'Going') {
             await createNotification({

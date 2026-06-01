@@ -31,6 +31,7 @@ export default function BloodBankDonors() {
     const [offset, setOffset] = useState(0);
     const limit = 12;
     const [showRegister, setShowRegister] = useState(false);
+    const [showGlobalSearch, setShowGlobalSearch] = useState(false);
     const [showRecall, setShowRecall] = useState(false);
     const [showDetail, setShowDetail] = useState(null);
 
@@ -78,6 +79,7 @@ export default function BloodBankDonors() {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => setShowRecall(true)} style={{ ...ghostBtn, gap: 6 }}><Radio size={14} /> RECALL</button>
+                        <button onClick={() => setShowGlobalSearch(true)} style={{ ...ghostBtn, gap: 6 }}><Search size={14} /> FIND GLOBAL DONOR</button>
                         <button onClick={() => setShowRegister(true)} style={primaryBtn}><UserPlus size={14} /> REGISTER DONOR</button>
                     </div>
                 </div>
@@ -172,6 +174,11 @@ export default function BloodBankDonors() {
             {/* ── REGISTER MODAL ──────────────────────────── */}
             <AnimatePresence>
                 {showRegister && <RegisterDonorModal onClose={() => setShowRegister(false)} onCreated={() => { setShowRegister(false); refetch(); }} />}
+            </AnimatePresence>
+
+            {/* ── GLOBAL SEARCH MODAL ───────────────────────── */}
+            <AnimatePresence>
+                {showGlobalSearch && <FindGlobalDonorModal onClose={() => setShowGlobalSearch(false)} onCreated={() => { setShowGlobalSearch(false); refetch(); }} />}
             </AnimatePresence>
 
             {/* ── RECALL MODAL ────────────────────────────── */}
@@ -320,6 +327,111 @@ function DonorDetailModal({ donorId, onClose, navigate }) {
                     </div>
                 )}
             </div>
+        </BBModal>
+    );
+}
+
+/* ────────── FIND GLOBAL DONOR ────────── */
+function FindGlobalDonorModal({ onClose, onCreated }) {
+    const [query, setQuery] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [results, setResults] = useState([]);
+    const [linkingId, setLinkingId] = useState(null);
+
+    const handleSearch = async (e) => {
+        if (e) e.preventDefault();
+        if (!query.trim()) { toast.error('Please enter name or phone number'); return; }
+        setLoading(true);
+        try {
+            const isPhone = /^\+?[0-9\s-]{5,20}$/.test(query);
+            const params = isPhone ? { phone: query.trim() } : { search: query.trim() };
+            const res = await bloodBankService.searchGlobalDonors(params);
+            setResults(res.data?.data || []);
+            if ((res.data?.data || []).length === 0) {
+                toast.error('No donors found in global registry');
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Search failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLink = async (donor_id) => {
+        setLinkingId(donor_id);
+        try {
+            await bloodBankService.registerExistingDonor(donor_id);
+            toast.success('Donor successfully linked!');
+            // Refresh result state locally
+            setResults(prev => prev.map(d => d.donor_id === donor_id ? { ...d, is_registered: 1 } : d));
+            onCreated();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to link donor');
+        } finally {
+            setLinkingId(null);
+        }
+    };
+
+    return (
+        <BBModal onClose={onClose} title="Find Global Donor" subtitle="Search global registry to link a donor to your bank" icon={Search} maxWidth={540}>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <Search size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#4A4A55' }} />
+                        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by name or phone..."
+                            style={{ ...inputStyle, paddingLeft: 36 }} />
+                    </div>
+                    <button type="submit" disabled={loading} style={{ ...primaryBtn, padding: '0 20px', height: 42 }}>
+                        {loading ? 'SEARCHING...' : 'SEARCH'}
+                    </button>
+                </form>
+
+                {/* Results list */}
+                <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
+                    {results.length > 0 ? (
+                        results.map(d => (
+                            <div key={d.donor_id} style={{
+                                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                                borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                            }}>
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <p style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 14, color: '#fff' }}>{d.name}</p>
+                                        <span style={{
+                                            fontFamily: 'var(--font-space)', fontWeight: 700, fontSize: 9,
+                                            padding: '1px 5px', borderRadius: 4, background: '#1A1A26', color: '#fff',
+                                            border: '1px solid rgba(255,255,255,0.15)'
+                                        }}>{d.blood_group}</span>
+                                    </div>
+                                    <p style={{ fontFamily: 'var(--font-space)', fontSize: 10, color: '#4A4A55', marginTop: 4 }}>{d.phone} · {d.city}</p>
+                                </div>
+
+                                {d.is_registered ? (
+                                    <span style={{
+                                        fontFamily: 'var(--font-space)', fontSize: 9, fontWeight: 700,
+                                        color: '#22c55e', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
+                                        padding: '4px 8px', borderRadius: 8
+                                    }}>LINKED</span>
+                                ) : (
+                                    <button onClick={() => handleLink(d.donor_id)} disabled={linkingId !== null}
+                                        style={{ ...primaryBtn, fontSize: 10, padding: '6px 12px', height: 'auto', borderRadius: 8 }}>
+                                        {linkingId === d.donor_id ? 'LINKING...' : 'LINK TO BANK'}
+                                    </button>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        !loading && (
+                            <div style={{ textAlign: 'center', padding: '30px 0', color: '#4A4A55' }}>
+                                <p style={{ fontFamily: 'var(--font-dm)', fontSize: 13 }}>Enter a query to find donors across Kerala.</p>
+                            </div>
+                        )
+                    )}
+                </div>
+            </div>
+            <BBModalFooter>
+                <button onClick={onClose} style={ghostBtn}>CLOSE</button>
+            </BBModalFooter>
         </BBModal>
     );
 }

@@ -1766,4 +1766,14 @@ INSERT INTO `audit_log` (`log_id`, `user_id`, `user_name`, `role`, `action`, `en
 ('LOG-STW-16-9', 'USR-BNK-KAS', 'State Admin', 'bloodbank', 'SYSTEM_SYNC', 'Blood_Bank', 'BNK-2026-KL-KAS13', 'Automated regional synchronization', '127.0.0.1', 'Info', NOW()),
 ('LOG-STW-16-10', 'USR-BNK-KAS', 'State Admin', 'bloodbank', 'SYSTEM_SYNC', 'Blood_Bank', 'BNK-2026-KL-KAS13', 'Automated regional synchronization', '127.0.0.1', 'Info', NOW());
 
+-- ─────────────────────────────────────
+-- SEED: blood_bank_donor
+-- ─────────────────────────────────────
+INSERT IGNORE INTO `blood_bank_donor` (bank_id, donor_id, created_at)
+SELECT bank_id, donor_id, MIN(created_at) FROM donation_record GROUP BY bank_id, donor_id;
+
+INSERT IGNORE INTO `blood_bank_donor` (bank_id, donor_id, created_at)
+SELECT bank_id, donor_id, MIN(created_at) FROM appointment GROUP BY bank_id, donor_id;
+
 SET FOREIGN_KEY_CHECKS = 1;
+

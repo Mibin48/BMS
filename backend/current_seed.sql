@@ -430,3 +430,10 @@ INSERT INTO `users` (`user_id`, `email`, `password_hash`, `phone`, `role`, `enti
 ('USR-2025-00018', 'deepa@gmail.com', '$2b$10$e8ja.hJQJrXkZeNdEhGQJ.8TUMCN.DvmHIYWPrK58lOTCiB/FQe0C', '+91 94471 44445', 'donor', 'DNR-2025-00004', 1, 1, NULL, NULL, '2026-03-06 10:29:11', '2026-04-08 11:19:13', 0, NULL),
 ('USR-2026-PFYR8', 'maxy@gmail.com', '$2b$10$UY/D64pvyOjt9t8ZxFGoD.zzsCswiadPT0F7OohZBOnRu54kzuRg2', '+91 97845 61230', 'hospital', 'HSP-2026-KL-YZZJ4', 0, 0, NULL, NULL, '2026-03-09 02:17:08', NULL, 0, NULL);
 
+
+-- Table structure for table `blood_bank_donor`
+INSERT IGNORE INTO `blood_bank_donor` (bank_id, donor_id, created_at)
+SELECT bank_id, donor_id, MIN(created_at) FROM donation_record GROUP BY bank_id, donor_id;
+
+INSERT IGNORE INTO `blood_bank_donor` (bank_id, donor_id, created_at)
+SELECT bank_id, donor_id, MIN(created_at) FROM appointment GROUP BY bank_id, donor_id;

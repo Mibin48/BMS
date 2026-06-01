@@ -161,7 +161,7 @@ async function getDonors(req, res, next) {
         const limit = parseInt(req.query.limit) || 20, offset = parseInt(req.query.offset) || 0;
         const { blood_group, city, search, eligibility } = req.query;
         
-        let where = 'dr.bank_id = ?'; const params = [bank_id];
+        let where = 'bbd.bank_id = ?'; const params = [bank_id];
         if (blood_group) { where += ' AND d.blood_group=?'; params.push(blood_group); }
         if (city) { where += ' AND d.city=?'; params.push(city); }
         if (search) { where += ' AND d.name LIKE ?'; params.push(`%${search}%`); }
@@ -175,7 +175,7 @@ async function getDonors(req, res, next) {
              (SELECT COUNT(*) FROM Donation_Record dr2 WHERE dr2.donor_id=d.donor_id AND dr2.bank_id=?) AS donations_to_this_bank,
              (SELECT COUNT(*) FROM Donation_Record dr3 WHERE dr3.donor_id=d.donor_id) AS total_donations
             FROM Donor d 
-            JOIN Donation_Record dr ON dr.donor_id=d.donor_id
+            JOIN blood_bank_donor bbd ON bbd.donor_id=d.donor_id
             LEFT JOIN Users u ON u.entity_id = d.donor_id AND u.role = 'donor'
             WHERE ${where} GROUP BY d.donor_id, u.email
             ORDER BY d.last_donation_date DESC`,
@@ -221,7 +221,7 @@ async function getDonors(req, res, next) {
 async function getDonorById(req, res, next) {
     try {
         const bank_id = req.user.entity_id, donor_id = req.params.donor_id;
-        const [chk] = await pool.execute('SELECT COUNT(*) AS cnt FROM Donation_Record WHERE donor_id=? AND bank_id=?', [donor_id, bank_id]);
+        const [chk] = await pool.execute('SELECT COUNT(*) AS cnt FROM blood_bank_donor WHERE donor_id=? AND bank_id=?', [donor_id, bank_id]);
         if (chk[0].cnt === 0) return notFound(res, 'Donor not registered with this blood bank');
         const [dRows] = await pool.execute(
             `SELECT d.*, u.email 
@@ -253,6 +253,7 @@ async function createDonor(req, res, next) {
         const donor_id = generateDonorId();
         conn = await pool.getConnection(); await conn.beginTransaction();
         await conn.execute('INSERT INTO Donor (donor_id,name,age,gender,blood_group,phone,city,last_donation_date,created_at,updated_at) VALUES (?,?,?,?,?,?,?,NULL,NOW(),NOW())', [donor_id, name, age, gender, blood_group, phone, city]);
+        await conn.execute('INSERT INTO blood_bank_donor (bank_id, donor_id) VALUES (?, ?)', [req.user.entity_id, donor_id]);
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'CREATED', entity: 'Donor', entity_id: donor_id, detail: `Donor registered by blood bank: ${name}, ${blood_group}`, ip: req.ip });
         await conn.commit(); conn.release();
         return success(res, { donor_id, name, blood_group, phone }, 'Donor registered', 201);
@@ -327,6 +328,7 @@ async function createHealthCheck(req, res, next) {
         const check_id = generateHealthCheckId();
         conn = await pool.getConnection(); await conn.beginTransaction();
         await conn.execute('INSERT INTO Health_Check (check_id,donor_id,check_date,weight,hemoglobin,blood_pressure,eligibility_status,created_at) VALUES (?,?,COALESCE(?,CURRENT_DATE),?,?,?,?,NOW())', [check_id, donor_id, check_date || null, weight, hemoglobin, blood_pressure, eligibility_status]);
+        await conn.execute('INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id) VALUES (?, ?)', [req.user.entity_id, donor_id]);
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'CREATED', entity: 'Health_Check', entity_id: check_id, detail: `Health check: ${donor.name} → ${eligibility_status} (Hb:${hemoglobin} W:${weight}kg)`, ip: req.ip });
         await conn.commit(); conn.release();
         const can_donate = eligibility_status === 'Eligible';
@@ -895,6 +897,80 @@ async function getCampRSVPs(req, res, next) {
     } catch (err) { next(err); }
 }
 
+// ═══ 34. SEARCH GLOBAL REGISTRY ═══
+async function searchGlobalDonors(req, res, next) {
+    try {
+        const bank_id = req.user.entity_id;
+        const { search, phone } = req.query;
+        if (!search && !phone) {
+            return error(res, 'Please provide search name or phone number', 400);
+        }
+
+        let query = `
+            SELECT d.*, u.email,
+              IF(EXISTS(SELECT 1 FROM blood_bank_donor bbd WHERE bbd.donor_id=d.donor_id AND bbd.bank_id=?), 1, 0) AS is_registered
+            FROM Donor d
+            LEFT JOIN Users u ON u.entity_id = d.donor_id AND u.role = 'donor'
+            WHERE d.is_deleted = 0
+        `;
+        const params = [bank_id];
+
+        if (phone) {
+            query += ' AND d.phone = ?';
+            params.push(phone);
+        } else if (search) {
+            query += ' AND (d.name LIKE ? OR d.phone LIKE ?)';
+            params.push(`%${search}%`, `%${search}%`);
+        }
+
+        query += ' ORDER BY d.name ASC LIMIT 50';
+
+        const [rows] = await pool.execute(query, params);
+        return success(res, rows);
+    } catch (err) { next(err); }
+}
+
+// ═══ 35. REGISTER EXISTING GLOBAL DONOR ═══
+async function registerExistingDonor(req, res, next) {
+    let conn;
+    try {
+        const bank_id = req.user.entity_id;
+        const { donor_id } = req.body;
+        if (!donor_id) return error(res, 'donor_id is required', 400);
+
+        // Verify donor exists globally
+        const [dRows] = await pool.execute('SELECT name, blood_group FROM Donor WHERE donor_id = ? AND is_deleted = 0', [donor_id]);
+        if (dRows.length === 0) return notFound(res, 'Donor not found in global registry');
+
+        const donor = dRows[0];
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        // Register donor with this bank
+        await conn.execute('INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id) VALUES (?, ?)', [bank_id, donor_id]);
+
+        // Audit log
+        await auditLog(conn, {
+            user_id: req.user.user_id,
+            role: 'bloodbank',
+            action: 'CREATED',
+            entity: 'blood_bank_donor',
+            entity_id: donor_id,
+            detail: `Linked existing global donor: ${donor.name} (${donor.blood_group}) to blood bank`,
+            ip: req.ip
+        });
+
+        await conn.commit();
+        conn.release();
+
+        return success(res, { donor_id, name: donor.name, blood_group: donor.blood_group }, 'Donor successfully linked to your blood bank', 201);
+    } catch (err) {
+        if (conn) { await conn.rollback(); conn.release(); }
+        next(err);
+    }
+}
+
 module.exports = {
     getProfile, updateProfile, getInventory, updateStock, getDonors, getDonorById,
     createDonor, updateDonor, getHealthChecks, getHealthCheckById, createHealthCheck,
@@ -902,5 +978,6 @@ module.exports = {
     approveRequest, rejectRequest, getIssues, getIssueById, createIssue,
     getPayments, updatePayment, recallDonors, getStats, getDashboard,
     getAppointments, updateAppointmentStatus,
-    getCamps, createCamp, updateCamp, deleteCamp, getCampRSVPs
+    getCamps, createCamp, updateCamp, deleteCamp, getCampRSVPs,
+    searchGlobalDonors, registerExistingDonor
 };

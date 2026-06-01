@@ -37,6 +37,12 @@ export const bloodBankService = {
     recallDonors: (data) =>
         api.post('/bloodbank/donors/recall', data),
 
+    searchGlobalDonors: (params) =>
+        api.get('/bloodbank/donors/search-global', { params }),
+
+    registerExistingDonor: (donor_id) =>
+        api.post('/bloodbank/donors/register-existing', { donor_id }),
+
     // Health Checks
     getHealthChecks: (params) =>
         api.get('/bloodbank/health-checks', { params }),

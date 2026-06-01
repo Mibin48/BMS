@@ -104,6 +104,10 @@ BEGIN
          updated_at = CURRENT_TIMESTAMP
    WHERE donor_id = NEW.donor_id;
 
+  -- Link donor to the blood bank
+  INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id, created_at)
+  VALUES (NEW.bank_id, NEW.donor_id, CURRENT_TIMESTAMP);
+
   -- 3. Fulfill matched appointment
   UPDATE appointment
      SET status = 'Fulfilled',
@@ -253,6 +257,10 @@ BEGIN
 
   SELECT name INTO v_donor_name FROM donor WHERE donor_id = NEW.donor_id;
   SELECT user_id INTO v_user_id FROM users WHERE entity_id = NEW.bank_id AND role = 'bloodbank' LIMIT 1;
+
+  -- Link donor to the blood bank
+  INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id, created_at)
+  VALUES (NEW.bank_id, NEW.donor_id, CURRENT_TIMESTAMP);
   
   IF v_user_id IS NOT NULL THEN
     INSERT INTO notification (notification_id, user_id, role, type, title, message, link, priority, created_at)
@@ -339,6 +347,10 @@ BEGIN
   SELECT bank_id INTO v_bank_id FROM blood_camp WHERE camp_id = NEW.camp_id;
   SELECT name INTO v_donor_name FROM donor WHERE donor_id = NEW.donor_id;
   SELECT user_id INTO v_user_id FROM users WHERE entity_id = v_bank_id AND role = 'bloodbank' LIMIT 1;
+
+  -- Link donor to the blood bank hosting the camp
+  INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id, created_at)
+  VALUES (v_bank_id, NEW.donor_id, CURRENT_TIMESTAMP);
   
   IF v_user_id IS NOT NULL THEN
     INSERT INTO notification (notification_id, user_id, role, type, title, message, link, priority, created_at)

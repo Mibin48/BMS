@@ -364,6 +364,19 @@ CREATE TABLE `users` (
   KEY `idx_users_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- ─────────────────────────────────────
+-- TABLE: blood_bank_donor
+-- ─────────────────────────────────────
+DROP TABLE IF EXISTS `blood_bank_donor`;
+CREATE TABLE `blood_bank_donor` (
+  `bank_id` varchar(25) NOT NULL,
+  `donor_id` varchar(25) NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`bank_id`, `donor_id`),
+  CONSTRAINT `fk_bb_donor_bank` FOREIGN KEY (`bank_id`) REFERENCES `blood_bank` (`bank_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bb_donor_donor` FOREIGN KEY (`donor_id`) REFERENCES `donor` (`donor_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ═══════════════════════════════════════════
@@ -416,6 +429,9 @@ CREATE TRIGGER `after_donation_insert` AFTER INSERT ON `donation_record` FOR EAC
      SET last_donation_date = NEW.donation_date,
          updated_at         = CURRENT_TIMESTAMP
    WHERE donor_id = NEW.donor_id;
+
+  INSERT IGNORE INTO `blood_bank_donor` (bank_id, donor_id, created_at)
+  VALUES (NEW.bank_id, NEW.donor_id, CURRENT_TIMESTAMP);
 END$$
 
 DELIMITER ;

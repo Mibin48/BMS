@@ -79,8 +79,8 @@ export default function BloodBankDonors() {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => setShowRecall(true)} style={{ ...ghostBtn, gap: 6 }}><Radio size={14} /> RECALL</button>
-                        <button onClick={() => setShowGlobalSearch(true)} style={{ ...ghostBtn, gap: 6 }}><Search size={14} /> FIND GLOBAL DONOR</button>
-                        <button onClick={() => setShowRegister(true)} style={primaryBtn}><UserPlus size={14} /> REGISTER DONOR</button>
+                        <button onClick={() => setShowRegister(true)} style={{ ...ghostBtn, gap: 6 }}><Plus size={14} /> NEW DONOR</button>
+                        <button onClick={() => setShowGlobalSearch(true)} style={primaryBtn}><UserPlus size={14} /> REGISTER DONOR</button>
                     </div>
                 </div>
 
@@ -91,7 +91,7 @@ export default function BloodBankDonors() {
                         <BBListSkeleton rows={12} height={72} />
                     ) : donors.length === 0 ? (
 
-                        <BBEmptyState icon={Users} title="No donors found" subtitle="Register a new donor to get started" action={() => setShowRegister(true)} actionLabel="+ REGISTER DONOR" />
+                        <BBEmptyState icon={Users} title="No donors found" subtitle="Register a donor to get started" action={() => setShowGlobalSearch(true)} actionLabel="REGISTER DONOR" />
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {donors.map(d => {

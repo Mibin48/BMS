@@ -12,18 +12,19 @@ services:
       - key: PORT
         value: 5000
       - key: DB_HOST
-        placeholder: "Aiven MySQL Hostname"
+        sync: false
       - key: DB_USER
         value: avnadmin
       - key: DB_PASSWORD
-        placeholder: "Aiven MySQL Password"
+        sync: false
       - key: DB_NAME
         value: defaultdb
       - key: DB_PORT
-        placeholder: "Aiven MySQL Port (usually 25470)"
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: CLIENT_URL
-        placeholder: "Deployed Vercel URL (e.g. https://hema-client.vercel.app)"
+        sync: false
+

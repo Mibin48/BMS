@@ -7,7 +7,7 @@
 DELIMITER $$
 
 CREATE TRIGGER `after_blood_issue_insert` 
-AFTER INSERT ON `blood_issue` 
+AFTER INSERT ON `Blood_Issue` 
 FOR EACH ROW 
 DECLARE v_bank_id     VARCHAR(25);
   DECLARE v_blood_group VARCHAR(5);
@@ -33,7 +33,7 @@ DECLARE v_bank_id     VARCHAR(25);
 END$$
 
 CREATE TRIGGER `after_donation_insert` 
-AFTER INSERT ON `donation_record` 
+AFTER INSERT ON `Donation_Record` 
 FOR EACH ROW 
 DECLARE v_units INT;
 

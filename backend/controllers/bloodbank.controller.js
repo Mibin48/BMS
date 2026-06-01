@@ -120,22 +120,22 @@ async function updateStock(req, res, next) {
 
         const s = stockRecord;
         let newUnits;
-        if (act === 'add') { 
-            newUnits = Math.min(s.available_units + units, s.capacity); 
-        } else { 
+        if (act === 'add') {
+            newUnits = Math.min(s.available_units + units, s.capacity);
+        } else {
             if (units > s.available_units) {
                 await conn.rollback(); conn.release();
-                return error(res, `Insufficient stock. Only ${s.available_units} units available.`, 400); 
+                return error(res, `Insufficient stock. Only ${s.available_units} units available.`, 400);
             }
-            newUnits = s.available_units - units; 
+            newUnits = s.available_units - units;
         }
 
         await conn.execute('UPDATE Blood_Stock SET available_units=?, last_updated=NOW() WHERE stock_id=?', [newUnits, stock_id]);
-        await auditLog(conn, { 
-            user_id: req.user.user_id, role: 'bloodbank', action: 'UPDATED', 
-            entity: 'Blood_Stock', entity_id: stock_id, 
-            detail: `${act.toUpperCase()} ${units}U ${s.blood_group} (${s.available_units}→${newUnits}) ${notes || ''}`, 
-            ip: req.ip, severity: newUnits / s.capacity <= 0.15 ? 'Warning' : 'Info' 
+        await auditLog(conn, {
+            user_id: req.user.user_id, role: 'bloodbank', action: 'UPDATED',
+            entity: 'Blood_Stock', entity_id: stock_id,
+            detail: `${act.toUpperCase()} ${units}U ${s.blood_group} (${s.available_units}→${newUnits}) ${notes || ''}`,
+            ip: req.ip, severity: newUnits / s.capacity <= 0.15 ? 'Warning' : 'Info'
         });
 
         await conn.commit();
@@ -143,14 +143,14 @@ async function updateStock(req, res, next) {
 
         const ss = newUnits / s.capacity > 0.6 ? 'Healthy' : newUnits / s.capacity > 0.3 ? 'Low' : 'Critical';
         await notifyInventoryAlert(bank_id, s.blood_group, newUnits, s.capacity);
-        
-        return success(res, { 
-            stock_id, blood_group: s.blood_group, previous_units: s.available_units, 
-            new_units: newUnits, action: act, units, stock_status: ss 
+
+        return success(res, {
+            stock_id, blood_group: s.blood_group, previous_units: s.available_units,
+            new_units: newUnits, action: act, units, stock_status: ss
         }, 'Stock updated successfully');
-    } catch (err) { 
-        if (conn) { await conn.rollback(); conn.release(); } 
-        next(err); 
+    } catch (err) {
+        if (conn) { await conn.rollback(); conn.release(); }
+        next(err);
     }
 }
 
@@ -160,12 +160,12 @@ async function getDonors(req, res, next) {
         const bank_id = req.user.entity_id;
         const limit = parseInt(req.query.limit) || 20, offset = parseInt(req.query.offset) || 0;
         const { blood_group, city, search, eligibility } = req.query;
-        
+
         let where = 'bbd.bank_id = ?'; const params = [bank_id];
         if (blood_group) { where += ' AND d.blood_group=?'; params.push(blood_group); }
         if (city) { where += ' AND d.city=?'; params.push(city); }
         if (search) { where += ' AND d.name LIKE ?'; params.push(`%${search}%`); }
-        
+
         const [rows] = await pool.execute(
             `SELECT DISTINCT d.*, u.email,
              (SELECT hc.eligibility_status FROM Health_Check hc WHERE hc.donor_id=d.donor_id ORDER BY hc.check_date DESC LIMIT 1) AS last_check_status,
@@ -206,13 +206,13 @@ async function getDonors(req, res, next) {
             deferred: processed.filter(d => d.current_eligibility === 'Deferred').length
         };
 
-        return success(res, { 
-            donors, 
-            summary: stats, 
+        return success(res, {
+            donors,
+            summary: stats,
             stats, // for compatibility
-            total: filtered.length, 
-            limit, 
-            offset 
+            total: filtered.length,
+            limit,
+            offset
         });
     } catch (err) { next(err); }
 }
@@ -227,7 +227,7 @@ async function getDonorById(req, res, next) {
             `SELECT d.*, u.email 
              FROM Donor d 
              LEFT JOIN Users u ON u.entity_id = d.donor_id AND u.role = 'donor'
-             WHERE d.donor_id = ?`, 
+             WHERE d.donor_id = ?`,
             [donor_id]
         );
         if (!dRows.length) return notFound(res, 'Donor not found');
@@ -285,7 +285,7 @@ async function getHealthChecks(req, res, next) {
         const bank_id = req.user.entity_id;
         const limit = parseInt(req.query.limit) || 20, offset = parseInt(req.query.offset) || 0;
         const { result, donor_id, date_from, date_to } = req.query;
-        let where = `hc.donor_id IN (SELECT DISTINCT donor_id FROM Donation_Record WHERE bank_id=?)`;
+        let where = 'hc.bank_id = ?';
         const params = [bank_id];
         if (result) { where += ' AND hc.eligibility_status=?'; params.push(result); }
         if (donor_id) { where += ' AND hc.donor_id=?'; params.push(donor_id); }
@@ -309,7 +309,7 @@ async function getHealthCheckById(req, res, next) {
             `SELECT hc.*, d.name AS donor_name, d.blood_group AS donor_blood_group, d.phone AS donor_phone,
         dr.donation_id, dr.donation_date, dr.quantity_ml
        FROM Health_Check hc JOIN Donor d ON d.donor_id=hc.donor_id LEFT JOIN Donation_Record dr ON dr.check_id=hc.check_id
-       WHERE hc.check_id=? AND hc.donor_id IN (SELECT DISTINCT donor_id FROM Donation_Record WHERE bank_id=?)`, [check_id, bank_id]);
+       WHERE hc.check_id=? AND hc.bank_id=?`, [check_id, bank_id]);
         if (!rows.length) return notFound(res, 'Health check not found');
         return success(res, rows[0]);
     } catch (err) { next(err); }
@@ -327,7 +327,7 @@ async function createHealthCheck(req, res, next) {
         const eligibility_status = calcEligibility(parseFloat(hemoglobin), parseFloat(weight), donor.last_donation_date);
         const check_id = generateHealthCheckId();
         conn = await pool.getConnection(); await conn.beginTransaction();
-        await conn.execute('INSERT INTO Health_Check (check_id,donor_id,check_date,weight,hemoglobin,blood_pressure,eligibility_status,created_at) VALUES (?,?,COALESCE(?,CURRENT_DATE),?,?,?,?,NOW())', [check_id, donor_id, check_date || null, weight, hemoglobin, blood_pressure, eligibility_status]);
+        await conn.execute('INSERT INTO Health_Check (check_id,donor_id,bank_id,check_date,weight,hemoglobin,blood_pressure,eligibility_status,created_at) VALUES (?,?,?,COALESCE(?,CURRENT_DATE),?,?,?,?,NOW())', [check_id, donor_id, req.user.entity_id, check_date || null, weight, hemoglobin, blood_pressure, eligibility_status]);
         await conn.execute('INSERT IGNORE INTO blood_bank_donor (bank_id, donor_id) VALUES (?, ?)', [req.user.entity_id, donor_id]);
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'CREATED', entity: 'Health_Check', entity_id: check_id, detail: `Health check: ${donor.name} → ${eligibility_status} (Hb:${hemoglobin} W:${weight}kg)`, ip: req.ip });
         await conn.commit(); conn.release();
@@ -394,14 +394,14 @@ async function createDonation(req, res, next) {
 
         // 1. Insert Donation
         await conn.execute('INSERT INTO Donation_Record (donation_id,donor_id,bank_id,check_id,donation_date,quantity_ml,blood_group,created_at) VALUES (?,?,?,?,COALESCE(?,CURRENT_DATE),?,?,NOW())', [donation_id, donor_id, bank_id, check_id, donation_date || null, quantity_ml, hc.blood_group]);
-        
+
         // 2. Update Donor's last donation date
         await conn.execute('UPDATE Donor SET last_donation_date = ? WHERE donor_id = ?', [d_date, donor_id]);
 
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'CREATED', entity: 'Donation_Record', entity_id: donation_id, detail: `Donation: ${hc.name} ${quantity_ml}ml ${hc.blood_group}.`, ip: req.ip });
-        
+
         await conn.commit(); conn.release();
-        
+
         const [stk] = await pool.execute('SELECT available_units, capacity FROM Blood_Stock WHERE bank_id=? AND blood_group=?', [bank_id, hc.blood_group]);
         if (stk.length) await notifyInventoryAlert(bank_id, hc.blood_group, stk[0].available_units, stk[0].capacity);
         return success(res, { donation_id, donor_id, donor_name: hc.name, blood_group: hc.blood_group, quantity_ml, donation_date: d_date, stock_updated: true, new_stock: { blood_group: hc.blood_group, available_units: stk[0]?.available_units || 0 } }, 'Donation recorded and inventory updated successfully.', 201);
@@ -465,7 +465,7 @@ async function approveRequest(req, res, next) {
         conn = await pool.getConnection(); await conn.beginTransaction();
         await conn.execute("UPDATE Blood_Request SET status='Processing',updated_at=NOW() WHERE request_id=?", [request_id]);
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'APPROVED', entity: 'Blood_Request', entity_id: request_id, detail: `Request approved: ${rows[0].units_required}U ${rows[0].blood_group}`, ip: req.ip });
-        
+
         const [uR] = await conn.execute('SELECT user_id FROM Users WHERE entity_id=?', [rows[0].hospital_id]);
         if (uR.length) {
             await createNotification({
@@ -491,7 +491,7 @@ async function rejectRequest(req, res, next) {
         conn = await pool.getConnection(); await conn.beginTransaction();
         await conn.execute("UPDATE Blood_Request SET status='Cancelled',updated_at=NOW() WHERE request_id=?", [request_id]);
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'REJECTED', entity: 'Blood_Request', entity_id: request_id, detail: `Request rejected: ${reason || 'No reason'}`, ip: req.ip, severity: 'Warning' });
-        
+
         const [uR] = await conn.execute('SELECT user_id FROM Users WHERE entity_id=?', [rows[0].hospital_id]);
         if (uR.length) {
             await createNotification({
@@ -570,7 +570,7 @@ async function createIssue(req, res, next) {
         await conn.execute('INSERT INTO Blood_Issue (issue_id,request_id,issue_date,units_issued,notes,created_at) VALUES (?,?,COALESCE(?,CURRENT_DATE),?,?,NOW())', [issue_id, request_id, issue_date || null, units_issued, notes || null]);
         // Trigger fires: stock decreases + request → Fulfilled
         await auditLog(conn, { user_id: req.user.user_id, user_name: null, role: 'bloodbank', action: 'ISSUED', entity: 'Blood_Issue', entity_id: issue_id, detail: `Issued ${units_issued}U ${r.blood_group} to ${r.hospital_name}`, ip: req.ip });
-        
+
         const [uR] = await conn.execute('SELECT user_id FROM Users WHERE entity_id=?', [r.hospital_id]);
         if (uR.length) {
             await createNotification({
@@ -728,14 +728,14 @@ async function getDashboard(req, res, next) {
         return success(res, {
             bank: bankR[0] || null,
             inventory: { stock: stockR, total_units: invSumR[0].total_units, critical_count: invSumR[0].critical_count },
-            stats: { 
-                total_donations: dn.total, 
-                total_ml: dn.total_ml, 
-                unique_donors: dn.unique_donors, 
-                total_requests, 
-                pending_requests, 
-                fulfilled_requests, 
-                fulfillment_rate: total_requests > 0 ? Math.round((fulfilled_requests / total_requests) * 1000) / 10 : 0, 
+            stats: {
+                total_donations: dn.total,
+                total_ml: dn.total_ml,
+                unique_donors: dn.unique_donors,
+                total_requests,
+                pending_requests,
+                fulfilled_requests,
+                fulfillment_rate: total_requests > 0 ? Math.round((fulfilled_requests / total_requests) * 1000) / 10 : 0,
                 pending_payments: py.pending_amount,
                 received_revenue: py.received_amount,
                 eligibility_rate: hc.total > 0 ? Math.round((hc.real_eligible / hc.total) * 100) : 0,

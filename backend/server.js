@@ -32,6 +32,9 @@ const bloodBankPublicRoutes = require('./routes/bloodbank.public.routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// trust proxy for proxy-aware rate-limiting behind Render
+app.set('trust proxy', 1);
+
 // ── SECURITY HEADERS ─────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 

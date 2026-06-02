@@ -693,7 +693,7 @@ async function getAvailableCamps(req, res, next) {
     try {
         const donor_id = req.user.entity_id;
         const { city } = req.query;
-        let where = 'c.camp_date >= CURRENT_DATE AND c.status = "Scheduled"';
+        let where = "c.camp_date >= CURRENT_DATE AND c.status = 'Scheduled'";
         const params = [];
         if (city) { where += ' AND c.city = ?'; params.push(city); }
 

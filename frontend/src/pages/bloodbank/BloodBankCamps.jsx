@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { bloodBankService } from '../../services/bloodBankService';
 import toast from 'react-hot-toast';
+import BBSkeleton, { BBStatSkeleton } from '../../components/bloodbank/BBSkeleton.jsx';
 
 function fmt(dateStr) {
     if (!dateStr) return '--';
@@ -134,17 +135,44 @@ export default function BloodBankCamps() {
 
             {/* Quick Stats */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <CampStat label="Total Scheduled" value={camps.length} icon={Calendar} color="var(--red)" />
-                <CampStat label="Upcoming Drives" value={upcomingCamps} icon={Clock} color="#3b82f6" />
-                <CampStat label="Total Registrations" value={totalRSVPs} icon={Users} color="#22c55e" />
-                <CampStat label="Fulfillment Goal" value="85%" icon={TrendingUp} color="#f59e0b" />
+                {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} style={{ flex: '1 1 200px', minWidth: 'min(100%, 200px)' }}>
+                            <BBStatSkeleton delay={i * 0.05} />
+                        </div>
+                    ))
+                ) : (
+                    <>
+                        <CampStat label="Total Scheduled" value={camps.length} icon={Calendar} color="var(--red)" />
+                        <CampStat label="Upcoming Drives" value={upcomingCamps} icon={Clock} color="#3b82f6" />
+                        <CampStat label="Total Registrations" value={totalRSVPs} icon={Users} color="#22c55e" />
+                        <CampStat label="Fulfillment Goal" value="85%" icon={TrendingUp} color="#f59e0b" />
+                    </>
+                )}
             </div>
 
             {loading ? (
-                <div style={{ height: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="cube-loader">
-                        <Loader2 size={32} color="var(--red)" className="spin" />
-                    </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} style={{ background: '#0F0F17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 24, padding: 24, height: 280, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                <BBSkeleton width="48px" height="48px" borderRadius="12px" />
+                                <div style={{ flex: 1 }}>
+                                    <BBSkeleton width="60%" height="16px" style={{ marginBottom: 6 }} />
+                                    <BBSkeleton width="40%" height="12px" />
+                                </div>
+                            </div>
+                            <BBSkeleton width="100%" height="60px" borderRadius="12px" />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                                <BBSkeleton width="80%" height="12px" />
+                                <BBSkeleton width="120%" height="12px" />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
+                                <BBSkeleton width="80px" height="12px" />
+                                <BBSkeleton width="60px" height="12px" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : camps.length === 0 ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '80px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', borderRadius: 24, border: '1px dashed rgba(255,255,255,0.08)' }}>
@@ -287,7 +315,17 @@ export default function BloodBankCamps() {
 
                             <div style={{ flex: 1, overflowY: 'auto', padding: 40 }} className="custom-scroll">
                                 {rsvpsLoading ? (
-                                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={32} className="spin" color="var(--red)" /></div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {Array.from({ length: 4 }).map((_, i) => (
+                                            <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <BBSkeleton width="50%" height="16px" style={{ marginBottom: 8 }} />
+                                                    <BBSkeleton width="30%" height="12px" />
+                                                </div>
+                                                <BBSkeleton width="60px" height="24px" borderRadius="100px" />
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : rsvps.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
                                         <AlertCircle size={48} color="var(--text3)" style={{ opacity: 0.1, marginBottom: 16 }} />

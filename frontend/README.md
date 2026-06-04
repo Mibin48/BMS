@@ -1,70 +1,143 @@
-# 🎨 HEM∆ Kerala — Frontend Application
-## Premium Blood Management Interface — v1.0.0
+# 🎨 HEM∆ Frontend Client — React/Vite Application (v1.0.0)
 
-The frontend for the HEM∆ platform, developed with high-performance React (Vite), premium animations, and a sophisticated dark-mode design system.
-
-### 🛠 Tech Stack
-- **Framework:** React 18+ (Vite)
-- **State & Logic:** Custom Hooks (`useFetch`, `useApi`, `useDebounce`)
-- **Animations:** Framer Motion
-- **Icons:** Lucide React
-- **Visualization:** Recharts
-- **Routing:** React Router DOM v6
-- **Notifications:** React Hot Toast
+HEM∆ Frontend is a premium, high-performance dark-mode Single Page Application (SPA) designed using React 18, Vite, and Framer Motion. It hosts interactive dashboard portals tailored to Admin, Donor, Hospital, and Blood Bank operators.
 
 ---
 
-### 🚦 Quick Start
+## 🛠 Tech Stack
 
-```bash
-# 1. Install dependencies
-npm install
+* **Build Tooling:** Vite (Fast Refresh, hot-reloading dev server, optimized rollup compiler)
+* **View Library:** React 18
+* **Animations:** Framer Motion (facilitates custom shimmers, layout transitions, and micro-interactive elements)
+* **Visualization:** Recharts (responsive inventory and analytical charts)
+* **Navigation:** React Router DOM (Declarative client-side routing with protected route guards)
+* **Notifications:** React Hot Toast
+* **Icons:** Lucide React
 
-# 2. Configure Environment
-cp .env.example .env
-# Set VITE_API_URL to http://localhost:5000/api
+---
 
-# 3. Start development
-npm run dev
-# App runs on http://localhost:5173
+## 🏗 Directory Architecture
+
+```
+frontend/
+├── public/                  # Static assets (Kerala maps, public icons)
+├── src/
+│   ├── components/          # Reusable UI component library
+│   │   ├── admin/           # Admin-specific layouts and sidebars
+│   │   ├── bloodbank/       # Blood-badge pills, status badges, and modals
+│   │   ├── SkeletonCard.jsx # Shared layout skeleton components (SkeletonTable, SkeletonStats)
+│   │   └── NumberStepper.jsx# Standardized stepper controls
+│   │
+│   ├── context/             # Global Context Providers
+│   │   └── AuthContext.jsx  # Active session tracking, token renewal, and credentials
+│   │
+│   ├── hooks/               # Custom state hooks
+│   │   ├── useFetch.js      # Declarative, cacheable HTTP data retrieval hook
+│   │   ├── useApi.js        # Declarative mutation runner (POST/PUT/DELETE)
+│   │   └── useDebounce.js   # Input debouncer for server query optimizations
+│   │
+│   ├── pages/               # Dashboard views sorted by portal roles
+│   │   ├── admin/           # 10+ panels (Audit, Inventory, Approvals)
+│   │   ├── auth/            # Sign-in, sign-up, and verification steps
+│   │   ├── bloodbank/       # Stock managers, screening cards, and issues
+│   │   ├── donor/           # Schedules, history trackers, and find bank
+│   │   └── hospital/        # Patient logs, billings, and request portals
+│   │
+│   ├── services/            # Axios API connection layers
+│   └── utils/               # Formatting, dates, and number formatters
 ```
 
-### 🛰 API Integration
-- **Service Layer:** `src/services/adminService.js` and other service files.
-- **Hook-based:** Components use `useFetch` for data retrieval and `useApi` for interactive actions (POST/PUT).
-- **Endpoint Configuration:** Base URL is managed via `VITE_API_URL` environment variable.
+---
+
+## 🚦 Local Setup & Run Guide
+
+### 1. Dependency installation
+Run from the `frontend` folder:
+```bash
+npm install
+```
+
+### 2. Configure Local environment variables
+Create a `.env` file from the template:
+```bash
+cp .env.example .env
+```
+Update the API base URL parameter:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+### 3. Running the client dev server
+Start the Vite local environment:
+```bash
+npm run dev
+```
+The app will run on `http://localhost:5173`.
+
+### 4. Compiling the Production Bundle
+Compile and optimize the build:
+```bash
+npm run build
+```
+This writes the static bundle to `./dist/`.
 
 ---
 
-### 🏗 Component Architecture
+## 🎨 Premium Dark-Mode Design System
 
-- **`src/components/`**: Atomic and complex reusable UI elements.
-    - `admin/`: Shared layouts for the Admin Portal.
-    - `StatCard/GlassCard`: Core design pillars for analytics display.
-    - `SkeletonCard`: Sophisticated loading states for data-heavy views.
-    - `Modal/Toast`: Global interactive feedback components.
+HEM∆ employs a custom-themed dark UX layout defined via CSS variables:
 
-- **`src/pages/admin/`**: 15+ Advanced management screens.
-    - `AdminDashboard`: Real-time KPI aggregation and Kerala network map.
-    - `AdminDonations/AdminRequests`: High-performance data tables with expanded detail views.
-    - `AdminAudit`: Chronological system event ledger with severity filtering.
-    - `AdminInventory`: Stock monitoring across all blood banks in the network.
+### Color Tokens
+* **HEM∆ Red (Clinical Primary):** `#D90025`
+* **Obsidian Core Background:** `#0A0A12`
+* **Translucent Surfaces:** `rgba(15,15,23,0.4)` paired with `1px solid rgba(255,255,255,0.06)` borders
+* **Active Status Labels:** Green (`#22c55e`), Cooling/Pending (`#f59e0b`), Deferred/Critical (`#D90025`)
 
-- **`src/data/`**: Mock data used for frontend-only prototyping and fallback scenarios.
-
----
-
-### 🎨 Design Language
-- **Primary Red:** `#D90025` (HEM∆ Red)
-- **Secondary Colors:** Blue (`#3b82f6`), Green (`#22c55e`), Amber (`#f59e0b`).
-- **Surface:** Deep charcoal (`#0A0A12`) and translucent glass textures (`#0F0F17` @ 60%).
-- **Typography:** Syne (Headings), Satoshi (UI/Data Labels), Inter (Body).
+### Typography Hierarchy
+* **UI Titles:** Syne (Geometric sans with deep weights)
+* **Technical Labels & Data:** Satoshi (High monospace alignment)
+* **General Prose:** Inter (Clean body font)
 
 ---
 
-### 📍 Assets
-- **`public/kerala-map.png`**: Used in the Admin Dashboard for visual network representation.
-- **Glassmorphism:** Achieved via CSS `backdrop-filter` and `rgba` color tokens.
+## ⚡ Custom Skeleton Loader System
+
+To improve Layout Stability and keep Cumulative Layout Shift (CLS) near zero, we use targeted skeleton modules matching actual page layout profiles:
+
+1. **`BBSkeleton` & `BBListSkeleton` ([BBSkeleton.jsx](file:///d:/BMS/frontend/src/components/bloodbank/BBSkeleton.jsx)):**
+   * Creates beautiful animated shimmer lines and profile bubbles inside blood bank queues.
+2. **`SkeletonStats` ([SkeletonCard.jsx](file:///d:/BMS/frontend/src/components/SkeletonCard.jsx)):**
+   * Matches the visual card dimensions of statistical KPI tiles.
+3. **`SkeletonTable` ([SkeletonCard.jsx](file:///d:/BMS/frontend/src/components/SkeletonCard.jsx)):**
+   * Replicates tabular grids with headers, cell rows, and border-bottom guidelines to prevent content jumps.
 
 ---
-© 2026 Designed for HEM∆ Kerala Healthcare.
+
+## 📡 Dynamic State Management (useFetch & useApi)
+
+Rather than heavy Redux configurations, HEM∆ leverages lightweight, declarative hooks:
+
+### 1. Data Querying (`useFetch`)
+Handles network requests, local state, error management, and dependency arrays out of the box:
+```javascript
+const { data, loading, error, refetch } = useFetch(
+    donorService.getAppointments,
+    queryParams,
+    [activeFilter]
+);
+```
+
+### 2. Form Submissions (`useApi`)
+Encapsulates mutations, load state tracking, and error mapping:
+```javascript
+const { execute: submitRequest, loading: saving } = useApi(hospitalService.createRequest);
+
+const handleSave = async () => {
+    await submitRequest(formData);
+    toast.success("Request submitted successfully!");
+};
+```
+
+---
+
+© 2026 Designed for HEM∆ Kerala Healthcare Network.

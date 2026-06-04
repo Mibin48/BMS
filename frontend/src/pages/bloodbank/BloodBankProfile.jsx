@@ -10,6 +10,7 @@ import { formatDate, formatDateTime } from '../../utils/formatters.js';
 import NumberStepper from '../../components/NumberStepper';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext.jsx';
+import BBSkeleton from '../../components/bloodbank/BBSkeleton.jsx';
 
 export default function BloodBankProfile() {
     const { showExpiryModal } = useAuth();
@@ -269,8 +270,61 @@ function SecurityRow({ title, detail, isWarning }) {
 
 function LoadingSkel() {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            {Array.from({ length: 4 }).map((_, i) => <div key={i} style={{ height: 200, background: '#14141E', borderRadius: 20, animation: 'pulse 1.5s infinite' }} />)}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32, paddingBottom: 60 }}>
+            {/* Header Title & Subtitle skeleton */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+                <div>
+                    <BBSkeleton width="280px" height="32px" style={{ marginBottom: 12 }} />
+                    <BBSkeleton width="450px" height="14px" />
+                </div>
+            </div>
+            
+            {/* Tab navigation skeleton */}
+            <div style={{ display: 'flex', gap: 8, padding: 6, width: 'fit-content' }}>
+                <BBSkeleton width="120px" height="38px" borderRadius="12px" />
+                <BBSkeleton width="140px" height="38px" borderRadius="12px" />
+            </div>
+
+            {/* Content sections skeleton */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 24 }}>
+                <div style={{ 
+                    gridColumn: 'span 7',
+                    background: 'rgba(15, 15, 23, 0.4)',
+                    borderRadius: 20, 
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    padding: 24,
+                    display: 'flex', flexDirection: 'column', gap: 20
+                }}>
+                    <BBSkeleton width="150px" height="18px" style={{ marginBottom: 10 }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <BBSkeleton width="80px" height="10px" />
+                                <BBSkeleton width="100%" height="40px" borderRadius="12px" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ 
+                    gridColumn: 'span 5',
+                    background: 'rgba(15, 15, 23, 0.4)',
+                    borderRadius: 20, 
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    padding: 24,
+                    display: 'flex', flexDirection: 'column', gap: 20
+                }}>
+                    <BBSkeleton width="180px" height="18px" style={{ marginBottom: 10 }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        {Array.from({ length: 2 }).map((_, i) => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <BBSkeleton width="80px" height="10px" />
+                                <BBSkeleton width="100%" height="40px" borderRadius="12px" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

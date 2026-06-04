@@ -16,6 +16,7 @@ import { formatDate } from '../../utils/formatters.js';
 import NumberStepper from '../../components/NumberStepper';
 import toast from 'react-hot-toast';
 import BBStatCard from '../../components/bloodbank/BBStatCard';
+import BBSkeleton, { BBListSkeleton } from '../../components/bloodbank/BBSkeleton.jsx';
 
 // Sub-component: Expandable Row
 function IssueRow({ issue }) {
@@ -109,7 +110,61 @@ function IssueRow({ issue }) {
                         style={{ background: 'rgba(0,0,0,0.2)', overflow: 'hidden' }}
                     >
                         <div style={{ padding: '24px 32px', borderLeft: `3px solid ${accentColor}`, margin: '4px 20px 20px', borderRadius: '0 0 16px 16px' }}>
-                            {loading ? <InlineLoader /> : (
+                            {loading ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <BBSkeleton width="14px" height="14px" circle />
+                                            <BBSkeleton width="120px" height="10px" />
+                                        </div>
+                                        <div>
+                                            <BBSkeleton width="140px" height="15px" style={{ marginBottom: 8 }} />
+                                            <BBSkeleton width="100px" height="12px" style={{ marginBottom: 4 }} />
+                                            <BBSkeleton width="110px" height="12px" />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <BBSkeleton width="14px" height="14px" circle />
+                                            <BBSkeleton width="120px" height="10px" />
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                            <div>
+                                                <BBSkeleton width="60px" height="9px" style={{ marginBottom: 4 }} />
+                                                <BBSkeleton width="80px" height="13px" />
+                                            </div>
+                                            <div>
+                                                <BBSkeleton width="60px" height="9px" style={{ marginBottom: 4 }} />
+                                                <BBSkeleton width="80px" height="13px" />
+                                            </div>
+                                            <div>
+                                                <BBSkeleton width="60px" height="9px" style={{ marginBottom: 4 }} />
+                                                <BBSkeleton width="80px" height="13px" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <BBSkeleton width="14px" height="14px" circle />
+                                            <BBSkeleton width="120px" height="10px" />
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                            <div>
+                                                <BBSkeleton width="60px" height="9px" style={{ marginBottom: 4 }} />
+                                                <BBSkeleton width="80px" height="11px" />
+                                            </div>
+                                            <div>
+                                                <BBSkeleton width="60px" height="9px" style={{ marginBottom: 4 }} />
+                                                <BBSkeleton width="80px" height="11px" />
+                                            </div>
+                                            <div>
+                                                <BBSkeleton width="60px" height="9px" style={{ marginBottom: 4 }} />
+                                                <BBSkeleton width="80px" height="11px" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: accentColor }}>
@@ -324,11 +379,7 @@ export default function BloodBankIssues() {
                         borderRadius: 24, padding: 12 
                     }}>
                     {loading ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16 }}>
-                            {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} style={{ background: '#14141E', borderRadius: 16, height: 70, animation: 'pulse 1.5s infinite' }} />
-                            ))}
-                        </div>
+                        <BBListSkeleton rows={4} />
                     ) : filteredIssues.length === 0 ? (
                         <div style={{ padding: 40 }}>
                             <BBEmptyState 

@@ -4,7 +4,7 @@ import { Search, MapPin, Phone, Building2, X, Droplets } from 'lucide-react';
 import { donorService } from '../../services/donorService.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { useApi } from '../../hooks/useApi.js';
-import { SkeletonCard } from '../../components/SkeletonCard';
+import { SkeletonCard, SkeletonLine } from '../../components/SkeletonCard';
 import ErrorCard from '../../components/ErrorCard';
 import EmptyState from '../../components/EmptyState';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -220,7 +220,19 @@ export default function DonorFindBank() {
                             {stockLoading ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     {Array.from({ length: 4 }).map((_, i) => (
-                                        <div key={i} className="animate-pulse" style={{ height: 50, background: 'rgba(255,255,255,0.04)', borderRadius: 10 }} />
+                                        <div key={i} style={{ 
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                                            borderRadius: 12, padding: '14px 18px',
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+                                                <SkeletonLine width="38px" height="26px" borderRadius="8px" delay={i * 0.05} />
+                                                <div style={{ flex: 1 }}>
+                                                    <SkeletonLine width="40%" height="14px" style={{ marginBottom: 6 }} delay={i * 0.05} />
+                                                    <SkeletonLine width="20%" height="10px" delay={i * 0.05} />
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : stockData?.stock?.length > 0 ? (

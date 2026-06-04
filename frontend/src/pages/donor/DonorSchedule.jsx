@@ -9,6 +9,7 @@ import {
 import { donorService } from '../../services/donorService';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { SkeletonCard, SkeletonList, SkeletonLine } from '../../components/SkeletonCard';
 
 /* ─── Utils ────────────────────────────────────────────────────── */
 const fmt = (dateStr, { short } = {}) => {
@@ -204,12 +205,6 @@ export default function DonorSchedule() {
 
     const isEligible = eligibility?.status === 'Eligible';
 
-    if (loading) return (
-        <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={32} color="var(--red)" className="spin" />
-        </div>
-    );
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <AnimatePresence>
@@ -219,38 +214,52 @@ export default function DonorSchedule() {
             </AnimatePresence>
 
             {/* ROW 1 Welcome Banner (Aligned with Dashboard) */}
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                style={{
-                    background: 'linear-gradient(135deg,#0F0F17 0%,#1A0A0F 100%)',
-                    border: '1px solid rgba(217,0,37,0.2)',
-                    borderRadius: 20, padding: '32px 40px',
-                    position: 'relative', overflow: 'hidden',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}
-            >
+            {loading ? (
                 <div style={{
-                    position: 'absolute', right: 32, top: '50%', transform: 'translateY(-50%)',
-                    fontFamily: 'var(--font-display)', fontSize: 180, color: 'rgba(217,0,37,0.06)',
-                    lineHeight: 1, pointerEvents: 'none', userSelect: 'none',
+                    background: '#0F0F17',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 20, padding: '32px 40px',
+                    display: 'flex', flexDirection: 'column', gap: 12, height: 160, justifyContent: 'center',
+                    position: 'relative', overflow: 'hidden'
                 }}>
-                    {isEligible ? 'GO' : 'WAIT'}
+                    <SkeletonLine width="150px" height="12px" />
+                    <SkeletonLine width="280px" height="36px" style={{ margin: '4px 0' }} />
+                    <SkeletonLine width="380px" height="16px" />
                 </div>
-                <div style={{ position: 'relative' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: '0.1em', marginBottom: 8, textTransform: 'uppercase' }}>
-                        ◈ SCHEDULING UNIT
+            ) : (
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+                    style={{
+                        background: 'linear-gradient(135deg,#0F0F17 0%,#1A0A0F 100%)',
+                        border: '1px solid rgba(217,0,37,0.2)',
+                        borderRadius: 20, padding: '32px 40px',
+                        position: 'relative', overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    }}
+                >
+                    <div style={{
+                        position: 'absolute', right: 32, top: '50%', transform: 'translateY(-50%)',
+                        fontFamily: 'var(--font-display)', fontSize: 180, color: 'rgba(217,0,37,0.06)',
+                        lineHeight: 1, pointerEvents: 'none', userSelect: 'none',
+                    }}>
+                        {isEligible ? 'GO' : 'WAIT'}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 48, color: '#fff', lineHeight: 1, marginBottom: 12 }}>
-                        {isEligible ? 'Ready to help.' : 'Pending rest.'}
+                    <div style={{ position: 'relative' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: '0.1em', marginBottom: 8, textTransform: 'uppercase' }}>
+                            ◈ SCHEDULING UNIT
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 48, color: '#fff', lineHeight: 1, marginBottom: 12 }}>
+                            {isEligible ? 'Ready to help.' : 'Pending rest.'}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: isEligible ? '#22c55e' : 'var(--text3)' }}>
+                            {isEligible 
+                                ? '🟢 You are eligible. Choose a facility below.' 
+                                : eligibility?.status === 'Cooling' 
+                                    ? `🟡 Rest active. Eligible in ${eligibility.days_remaining} days.`
+                                    : '🔴 Check your health records for status.'}
+                        </div>
                     </div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: isEligible ? '#22c55e' : 'var(--text3)' }}>
-                        {isEligible 
-                            ? '🟢 You are eligible. Choose a facility below.' 
-                            : eligibility?.status === 'Cooling' 
-                                ? `🟡 Rest active. Eligible in ${eligibility.days_remaining} days.`
-                                : '🔴 Check your health records for status.'}
-                    </div>
-                </div>
-            </motion.div>
+                </motion.div>
+            )}
 
             {/* TAB Navigation (Dashboard Style) */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -294,7 +303,11 @@ export default function DonorSchedule() {
                 {tab === 'bank' ? (
                     <motion.div key="banks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-                            {banks
+                            {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <SkeletonCard key={i} height="200px" delay={i * 0.05} />
+                                ))
+                            ) : banks
                                 .filter(b => b.bank_name.toLowerCase().includes(searchQuery.toLowerCase()) || b.city.toLowerCase().includes(searchQuery.toLowerCase()))
                                 .map(bank => (
                                 <motion.div key={bank.bank_id}
@@ -330,7 +343,9 @@ export default function DonorSchedule() {
                 ) : tab === 'camps' ? (
                     <motion.div key="camps" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {camps
+                            {loading ? (
+                                <SkeletonList count={4} />
+                            ) : camps
                                 .filter(c => c.camp_name.toLowerCase().includes(searchQuery.toLowerCase()) || c.city.toLowerCase().includes(searchQuery.toLowerCase()))
                                 .map(camp => {
                                 const isGoing = camp.my_rsvp === 'Going';
@@ -384,7 +399,9 @@ export default function DonorSchedule() {
                             ))}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            {appointments
+                            {loading ? (
+                                <SkeletonList count={3} />
+                            ) : appointments
                                 .filter(a => apptStatus === 'All' || a.status === apptStatus)
                                 .map(appt => {
                                     const sc = {

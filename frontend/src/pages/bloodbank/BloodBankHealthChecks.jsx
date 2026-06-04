@@ -15,6 +15,7 @@ import { InlineLoader } from '../../components/LoadingSpinner';
 import { formatML } from '../../utils/formatters.js';
 import NumberStepper from '../../components/NumberStepper';
 import toast from 'react-hot-toast';
+import { BBListSkeleton } from '../../components/bloodbank/BBSkeleton.jsx';
 
 export default function BloodBankHealthChecks() {
     const location = useLocation();
@@ -46,7 +47,7 @@ export default function BloodBankHealthChecks() {
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 style={{ ...cardBase, padding: 28 }}>
                 {loading ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{Array.from({ length: 5 }).map((_, i) => <div key={i} style={{ background: '#14141E', borderRadius: 16, height: 100, animation: 'pulse 1.5s infinite' }} />)}</div>
+                    <BBListSkeleton rows={5} />
                 ) : checks.length === 0 ? (
                     <BBEmptyState icon={Stethoscope} title="No health checks" subtitle="Record donor health checks here" action={() => setShowCreate(true)} actionLabel="+ NEW HEALTH CHECK" />
                 ) : (
